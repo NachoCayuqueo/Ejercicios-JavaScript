@@ -1,4 +1,4 @@
-import basededatos from './basededatos.js';
+import basededatos, { database } from './basededatos.js';
 
 
 /**
@@ -6,8 +6,14 @@ import basededatos from './basededatos.js';
 */
 export const promedioAnioEstreno = () => {
     // Ejemplo de como accedo a datos dentro de la base de datos
-    // console.log(basededatos.peliculas);
-    return [];
+    // console.log(basededatos.peliculas.length);
+    
+    let suma = 0;
+    
+    for(let pelicula of basededatos.peliculas)
+        suma = suma + pelicula["anio"]
+    
+    return (suma/basededatos.peliculas.length);
 };
 
 /**
@@ -16,7 +22,16 @@ export const promedioAnioEstreno = () => {
 * @param {number} promedio
   */
 export const pelicuasConCriticaPromedioMayorA = (promedio) => {
-    return [];
+    
+    let idPeliculaArray = []
+    
+    //obtengo los id de peliculas con criticas mayores a promedio
+    basededatos.calificaciones.forEach(calificacion => {
+        if (calificacion.puntuacion > promedio)  
+            idPeliculaArray.push(calificacion.pelicula)
+    } )
+            
+    return basededatos.peliculas.filter(pelicula => idPeliculaArray.includes(pelicula.id));
 };
 
 /**
@@ -24,7 +39,14 @@ export const pelicuasConCriticaPromedioMayorA = (promedio) => {
 * @param {string} nombreDirector
 */
 export const peliculasDeUnDirector = (nombreDirector) => {
-    return [];
+    let idDirector
+
+    for(let director of basededatos.directores){
+        if(director.nombre === nombreDirector)
+            idDirector = director.id
+    }
+   
+    return basededatos.peliculas.filter(pelicula => pelicula.directores.includes(idDirector));
 };
 
 /**
@@ -32,7 +54,19 @@ export const peliculasDeUnDirector = (nombreDirector) => {
 * @param {number} peliculaId
 */
 export const promedioDeCriticaBypeliculaId = (peliculaId) => {
-    return [];
+
+    let suma = 0
+    let cont = 0
+    
+    for(let id of basededatos.calificaciones){
+        
+        if(id.pelicula === peliculaId){
+            suma = suma + id.critico
+            cont = cont + 1
+        }
+        
+    }
+    return (suma /cont)
 };
 
 /**
@@ -70,7 +104,15 @@ export const promedioDeCriticaBypeliculaId = (peliculaId) => {
 export const obtenerPeliculasConPuntuacionExcelente = () => {
     // Ejemplo de como accedo a datos dentro de la base de datos
     // console.log(basededatos.peliculas);
-    return [];
+
+    let puntuacionesExcelentes = []
+
+    for (let calificacion of database.calificaciones){
+        if(calificacion.puntuacion >= 9)
+            puntuacionesExcelentes.push(calificacion.pelicula)
+    }    
+
+    return basededatos.peliculas.filter(pelicula => puntuacionesExcelentes.includes(pelicula.id));
 };
 
 /**
@@ -121,5 +163,60 @@ export const obtenerPeliculasConPuntuacionExcelente = () => {
  * @param {string} nombrePelicula
  */
 export const expandirInformacionPelicula = (nombrePelicula) => {
-    return {};
+
+    let datosPeli =(basededatos.peliculas.filter(pelicula => pelicula.nombre === nombrePelicula))[0]
+    
+    console.log("Nombre de Pelicula: "+nombrePelicula)
+
+    const directores = obtenerDirectores(datosPeli)
+    const generos = obtenerGeneros(datosPeli)
+    const criticos = obtenerCriticos(datosPeli)
+
+    return {
+        //...datosPeli,
+        nombre: datosPeli.nombre,
+        anio: datosPeli.anio,
+        direccion: datosPeli.direccionSetFilmacion,
+        directores,
+        generos,
+        criticos
+    };
 };
+
+const obtenerDirectores = (pelicula) => {
+
+    return basededatos.directores.filter(director => pelicula.directores.includes(director.id))
+}
+
+const obtenerGeneros = (pelicula) => {
+    return basededatos.generos.filter(genero => pelicula.generos.includes(genero.id))
+}
+
+const obtenerCriticos = (pelicula) => {
+
+    const calificaciones = obtenerCalificaciones(pelicula)
+    const criticos = basededatos.criticos
+    const paises = basededatos.paises
+    let criticosPelicula = []
+
+    for (let calificacion of calificaciones){
+        let unCritico = criticos.filter(critico => critico.id === calificacion.critico)
+        
+        let pais = paises.filter(pais => pais.id === unCritico[0].pais)
+
+        const infoCritico = {
+            id: unCritico[0].id,
+            nombre: unCritico[0].nombre,
+            edad: unCritico[0].edad,
+            pais: pais[0].nombre,
+            calificacion: calificacion.puntuacion
+        }
+        criticosPelicula.push(infoCritico)
+    }
+
+    return criticosPelicula
+}
+
+const obtenerCalificaciones = (pelicula) => {
+    return basededatos.calificaciones.filter(calificacion => calificacion.pelicula === pelicula.id)
+}
